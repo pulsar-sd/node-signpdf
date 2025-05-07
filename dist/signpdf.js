@@ -147,22 +147,36 @@ class SignPdf {
 
     p7.addSigner({
       key: privateKey,
-      certificate,
-      digestAlgorithm: _nodeForge.default.pki.oids.sha256,
-      authenticatedAttributes: [{
-        type: _nodeForge.default.pki.oids.contentType,
-        value: _nodeForge.default.pki.oids.data
-      }, {
-        type: _nodeForge.default.pki.oids.signingTime,
-        // value can also be auto-populated at signing time
-        // We may also support passing this as an option to sign().
-        // Would be useful to match the creation time of the document for example.
-        value: new Date()
-      }, {
-        type: _nodeForge.default.pki.oids.messageDigest // value will be auto-populated at signing time
-
-      }]
-    }); // Sign in detached mode.
+      certificate: signerCert,
+      issuer: signerCert.issuer,
+      serialNumber: signerCert.serialNumber,
+      digestAlgorithm: forge.pki.oids.sha256,
+      authenticatedAttributes: [
+        // ORDER MATTERS!
+        {
+          type: forge.pki.oids.contentType,
+          value: forge.pki.oids.data,
+        },
+        {
+          type: forge.pki.oids.messageDigest,
+          // value will be auto-populated at signing time
+        },
+        {
+          type: forge.pki.oids.essSigningCertificateV2,
+          value: essSigningCertAsn1,
+        },
+        {
+          type: forge.pki.oids.revocationInfoArchival,
+          value: revocationInfoArchivalAsn1,
+        },
+      ],
+      unauthenticatedAttributes: [
+        {
+          type: forge.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
+          value: '',
+        },
+      ],
+    });
 
     p7.sign({
       detached: true
