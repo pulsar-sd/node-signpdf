@@ -4,7 +4,13 @@
     "description": "DEPRECATED. Have a look at @signpdf/signpdf instead.",
     "repository": {
         "type": "git",
-        "url": "https://github.com/vbuch/node-signpdf"
+        "url": "git+https://github.com/pulsar-sd/node-signpdf.git"
+    },
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    },
+    "bugs": {
+        "url": "https://github.com/pulsar-sd/node-signpdf/issues"
     },
     "license": "MIT",
     "keywords": [
@@ -61,7 +67,7 @@
         "eslint-import-resolver-babel-module": "^5.3.1",
         "eslint-plugin-import": "^2.25.3",
         "eslint-plugin-jest": "^25.2.4",
-        "husky": "^7.0.4",
+        "husky": "^8.0.0",
         "jest": "^27.3.1",
         "node-forge": "^1.2.1",
         "pdfkit": "^0.10.0",
