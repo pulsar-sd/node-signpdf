@@ -1,6 +1,6 @@
 {
-    "name": "node-signpdf",
-    "version": "3.0.0",
+    "name": "@pulsar-sd/node-signpdf",
+    "version": "0.1.1",
     "description": "DEPRECATED. Have a look at @signpdf/signpdf instead.",
     "repository": {
         "type": "git",
@@ -66,5 +66,9 @@
         "node-forge": "^1.2.1",
         "pdfkit": "^0.10.0",
         "typescript": "^5.2.2"
+    },
+    "dependencies": {
+        "@pulsar-sd/node-signpdf": "file:",
+        "node-signpdf": "file:"
     }
 }
