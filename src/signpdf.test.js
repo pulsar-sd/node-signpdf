@@ -72,9 +72,9 @@ const createPdf = (params) => new Promise((resolve) => {
 });
 
 describe('Test signing', () => {
-    it('expects PDF to be Buffer', () => {
+    it('expects PDF to be Buffer', async () => {
         try {
-            signer.sign('non-buffer', Buffer.from(''));
+            await signer.sign('non-buffer', Buffer.from(''));
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);
@@ -82,9 +82,9 @@ describe('Test signing', () => {
             expect(e.message).toMatchSnapshot();
         }
     });
-    it('expects P12 certificate to be Buffer', () => {
+    it('expects P12 certificate to be Buffer', async () => {
         try {
-            signer.sign(Buffer.from(''), 'non-buffer');
+            await signer.sign(Buffer.from(''), 'non-buffer');
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);
@@ -92,9 +92,9 @@ describe('Test signing', () => {
             expect(e.message).toMatchSnapshot();
         }
     });
-    it('expects PDF to contain a ByteRange placeholder', () => {
+    it('expects PDF to contain a ByteRange placeholder', async () => {
         try {
-            signer.sign(Buffer.from('No BR placeholder\n%%EOF'), Buffer.from(''));
+            await signer.sign(Buffer.from('No BR placeholder\n%%EOF'), Buffer.from(''));
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);
@@ -114,7 +114,7 @@ describe('Test signing', () => {
                 `${__dirname}/../resources/certificate.p12`,
             );
 
-            signer.sign(pdfBuffer, p12Buffer);
+            await signer.sign(pdfBuffer, p12Buffer);
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);
@@ -128,7 +128,7 @@ describe('Test signing', () => {
             `${__dirname}/../resources/certificate.p12`,
         );
 
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
         expect(pdfBuffer instanceof Buffer).toBe(true);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
@@ -141,7 +141,7 @@ describe('Test signing', () => {
             `${__dirname}/../resources/certificate.p12`,
         );
 
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
         expect(pdfBuffer instanceof Buffer).toBe(true);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
@@ -154,11 +154,11 @@ describe('Test signing', () => {
         );
 
         let pdfBuffer = await createPdf({text: 'Some text'});
-        signer.sign(pdfBuffer, p12Buffer);
+        await signer.sign(pdfBuffer, p12Buffer);
         const signature1 = signer.lastSignature;
 
         pdfBuffer = await createPdf({text: 'some other text '.repeat(30)});
-        signer.sign(pdfBuffer, p12Buffer);
+        await signer.sign(pdfBuffer, p12Buffer);
         const signature2 = signer.lastSignature;
 
         expect(signature1).not.toBe(signature2);
@@ -174,7 +174,7 @@ describe('Test signing', () => {
             reason: 'I have reviewed it.',
             signatureLength: 1612,
         });
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
         expect(typeof signature === 'string').toBe(true);
@@ -190,7 +190,7 @@ describe('Test signing', () => {
             reason: 'I have reviewed it.',
             signatureLength: 1612,
         });
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
         const {signature, signedData} = extractSignature(pdfBuffer);
         expect(typeof signature === 'string').toBe(true);
         expect(signedData instanceof Buffer).toBe(true);
@@ -207,7 +207,7 @@ describe('Test signing', () => {
             reason: 'I have reviewed it.',
             signatureLength: 1612,
         });
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
         expect(typeof signature === 'string').toBe(true);
@@ -226,7 +226,7 @@ describe('Test signing', () => {
             reason: 'I have reviewed it.',
             signatureLength: 1612,
         });
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
         expect(typeof signature === 'string').toBe(true);
@@ -245,7 +245,7 @@ describe('Test signing', () => {
             location: 'test location',
             signatureLength: 1592,
         });
-        signedPdfBuffer = signer.sign(signedPdfBuffer, secondP12Buffer, {
+        signedPdfBuffer = await signer.sign(signedPdfBuffer, secondP12Buffer, {
             passphrase: 'node-signpdf',
         });
         const {signature, signedData} = extractSignature(signedPdfBuffer, 2);
@@ -260,7 +260,7 @@ describe('Test signing', () => {
             `${__dirname}/../resources/certificate.p12`,
         );
 
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
         expect(pdfBuffer instanceof Buffer).toBe(true);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
@@ -276,7 +276,7 @@ describe('Test signing', () => {
             location: 'test location',
             signatureLength: 1592,
         });
-        pdfBuffer = signer.sign(pdfBuffer, secondP12Buffer, {
+        pdfBuffer = await signer.sign(pdfBuffer, secondP12Buffer, {
             passphrase: 'node-signpdf',
         });
         expect(pdfBuffer instanceof Buffer).toBe(true);
@@ -301,7 +301,7 @@ describe('Test signing', () => {
             location: 'some city',
             signatureLength: 1612,
         });
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
         expect(typeof signature === 'string').toBe(true);
@@ -311,7 +311,7 @@ describe('Test signing', () => {
         let pdfBuffer = await createPdf();
         const p12Buffer = fs.readFileSync(`${__dirname}/../resources/bundle.p12`);
 
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer);
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer);
         expect(pdfBuffer instanceof Buffer).toBe(true);
 
         const {signature, signedData} = extractSignature(pdfBuffer);
@@ -322,7 +322,7 @@ describe('Test signing', () => {
         let pdfBuffer = await createPdf();
         const p12Buffer = fs.readFileSync(`${__dirname}/../resources/withpass.p12`);
 
-        pdfBuffer = signer.sign(pdfBuffer, p12Buffer, {
+        pdfBuffer = await signer.sign(pdfBuffer, p12Buffer, {
             passphrase: 'node-signpdf',
         });
         expect(pdfBuffer instanceof Buffer).toBe(true);
@@ -336,7 +336,7 @@ describe('Test signing', () => {
         const p12Buffer = fs.readFileSync(`${__dirname}/../resources/withpass.p12`);
 
         try {
-            signer.sign(pdfBuffer, p12Buffer, {passphrase: 'Wrong passphrase'});
+            await signer.sign(pdfBuffer, p12Buffer, {passphrase: 'Wrong passphrase'});
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof Error).toBe(true);
@@ -370,7 +370,7 @@ describe('Test signing', () => {
         };
 
         try {
-            signer.sign(pdfBuffer, p12Buffer);
+            await signer.sign(pdfBuffer, p12Buffer);
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);
@@ -402,7 +402,7 @@ describe('Test signing', () => {
                 `${__dirname}/../resources/certificate.p12`,
             );
 
-            signer.sign(pdfBuffer, p12Buffer);
+            await signer.sign(pdfBuffer, p12Buffer);
             expect('here').not.toBe('here');
         } catch (e) {
             expect(e instanceof SignPdfError).toBe(true);

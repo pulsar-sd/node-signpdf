@@ -56,7 +56,7 @@ class SignPdf {
     this.lastSignature = null;
   }
 
-  sign(pdfBuffer, p12Buffer, additionalOptions = {}) {
+  async sign(pdfBuffer, p12Buffer, additionalOptions = {}) {
     const options = {
       asn1StrictParsing: false,
       passphrase: '',
@@ -170,17 +170,36 @@ class SignPdf {
           value: revocationInfoArchivalAsn1,
         },
       ],
-      unauthenticatedAttributes: [
-        {
-          type: forge.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
-          value: '',
-        },
-      ],
     });
+
+    if (options.tsa) {
+      signer.unauthenticatedAttributes = [
+          {
+              type: forge.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
+              value: ""
+          }
+      ]
+  }
 
     p7.sign({
       detached: true
     }); // Check if the PDF has a good enough placeholder to fit the signature.
+
+
+    if (options.tsa) {
+      const signature = p7.signers[0].signature;
+      const token = await tsa({
+          tsaUrl: options.tsa,
+          signature
+      });
+
+      p7.signerInfos[0].value[6].value[0].value[1] = forge.asn1.create(
+          forge.asn1.Class.UNIVERSAL,
+          forge.asn1.Type.SET,
+          true,
+          [timestampToken]
+      );
+  }
 
     const raw = _nodeForge.default.asn1.toDer(p7.toAsn1()).getBytes(); // placeholderLength represents the length of the HEXified symbols but we're
     // checking the actual lengths.
