@@ -1221,7 +1221,7 @@
     fastq "^1.6.0"
 
 "@pulsar-sd/node-signpdf@file:":
-  version "0.1.4"
+  version "0.1.5"
   resolved "file:"
   dependencies:
     "@pulsar-sd/node-signpdf" "file:"
@@ -4212,7 +4212,7 @@ node-releases@^2.0.2:
   integrity sha512-XxYDdcQ6eKqp/YjI+tb2C5WM2LgjnZrfYg4vgQt49EK268b6gYCHsBLrK2qvJo4FmCtqmKezb0WZFK4fkrZNsg==
 
 "node-signpdf@file:":
-  version "0.1.4"
+  version "0.1.5"
   resolved "file:"
   dependencies:
     "@pulsar-sd/node-signpdf" "file:"

@@ -16,6 +16,7 @@ Object.defineProperty(exports, "SignPdfError", {
 });
 exports.default = void 0;
 
+var axios = require('axios')
 var _nodeForge = _interopRequireDefault(require("node-forge"));
 
 var _SignPdfError = _interopRequireDefault(require("./SignPdfError"));
@@ -150,23 +151,23 @@ class SignPdf {
       certificate: signerCert,
       issuer: signerCert.issuer,
       serialNumber: signerCert.serialNumber,
-      digestAlgorithm: forge.pki.oids.sha256,
+      digestAlgorithm: _nodeForge.default.pki.oids.sha256,
       authenticatedAttributes: [
         // ORDER MATTERS!
         {
-          type: forge.pki.oids.contentType,
-          value: forge.pki.oids.data,
+          type: _nodeForge.default.pki.oids.contentType,
+          value: _nodeForge.default.pki.oids.data,
         },
         {
-          type: forge.pki.oids.messageDigest,
+          type: _nodeForge.default.pki.oids.messageDigest,
           // value will be auto-populated at signing time
         },
         {
-          type: forge.pki.oids.essSigningCertificateV2,
+          type: _nodeForge.default.pki.oids.essSigningCertificateV2,
           value: essSigningCertAsn1,
         },
         {
-          type: forge.pki.oids.revocationInfoArchival,
+          type: _nodeForge.default.pki.oids.revocationInfoArchival,
           value: revocationInfoArchivalAsn1,
         },
       ],
@@ -175,7 +176,7 @@ class SignPdf {
     if (options.tsa) {
       signer.unauthenticatedAttributes = [
           {
-              type: forge.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
+              type: _nodeForge.default.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
               value: ""
           }
       ]
@@ -185,6 +186,104 @@ class SignPdf {
       detached: true
     }); // Check if the PDF has a good enough placeholder to fit the signature.
 
+    /**
+     * TSA implementation
+     *
+     * @param {String} tsaUrl
+     * @param {signature} Signature data
+     * @returns {object} Token
+     */
+    const tsa = async({
+      tsaUrl,
+      signature
+    }) => {
+      // Message imprint
+      // openssl ts -query -data input.data -no_nonce -sha256 -cert -out openssl.tsq (for debug)
+      // fs.writeFileSync(__dirname + '/input.data', raw , {encoding: 'binary'});
+      // Generate SHA256 hash from signature content for TSA
+      const md = _nodeForge.default.md.sha256.create();
+      md.update(signature);
+
+      // Generate TSA request
+      const asn1Req = _nodeForge.default.asn1.create(
+          _nodeForge.default.asn1.Class.UNIVERSAL,
+          _nodeForge.default.asn1.Type.SEQUENCE,
+          true,
+          [
+              // Version
+              {
+                  composed: false,
+                  constructed: false,
+                  tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                  type: _nodeForge.default.asn1.Type.INTEGER,
+                  value: _nodeForge.default.asn1.integerToDer(0).data,
+              },
+              {
+                  composed: true,
+                  constructed: true,
+                  tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                  type: _nodeForge.default.asn1.Type.SEQUENCE,
+                  value: [
+                      {
+                          composed: true,
+                          constructed: true,
+                          tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                          type: _nodeForge.default.asn1.Type.SEQUENCE,
+                          value: [
+                              {
+                                  composed: false,
+                                  constructed: false,
+                                  tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                                  type: _nodeForge.default.asn1.Type.OID,
+                                  value: _nodeForge.default.asn1.oidToDer(_nodeForge.default.oids.sha256).data,
+                              }, {
+                                  composed: false,
+                                  constructed: false,
+                                  tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                                  type: _nodeForge.default.asn1.Type.NULL,
+                                  value: ""
+                              }
+                          ]
+                      }, {// Message imprint
+                          composed: false,
+                          constructed: false,
+                          tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                          type: _nodeForge.default.asn1.Type.OCTETSTRING,
+                          value: md.digest().data,
+                      }
+                  ]
+              }, {
+                  composed: false,
+                  constructed: false,
+                  tagClass: _nodeForge.default.asn1.Class.UNIVERSAL,
+                  type: _nodeForge.default.asn1.Type.BOOLEAN,
+                  value: 1, // Get REQ certificates
+              }
+          ]
+      );
+
+      const tsr = _nodeForge.default.asn1.toDer(asn1Req).data;
+
+      // For debug
+      // fs.writeFileSync(__dirname + '/generated.tsq', tsr , {encoding: 'binary'});
+
+      // Send to TSA
+      // curl -H "Content-Type: application/timestamp-query" --data-binary '@generated.tsq' https://freetsa.org/tsr
+      // TODO: Authentication
+      const response = await axios({
+          method: "post",
+          url: tsaUrl,
+          data: Buffer.from(tsr, 'binary'),
+          headers: {
+              "Content-Type": `application/timestamp-query`,
+          },
+          responseType: 'arraybuffer',
+          responseEncoding: 'binary'
+      });
+
+      // Return token (it contains cert data)
+      return _nodeForge.default.asn1.fromDer(response.data.toString('binary')).value[1];
+    } // end TSA helper function
 
     if (options.tsa) {
       const signature = p7.signers[0].signature;
@@ -193,9 +292,9 @@ class SignPdf {
           signature
       });
 
-      p7.signerInfos[0].value[6].value[0].value[1] = forge.asn1.create(
-          forge.asn1.Class.UNIVERSAL,
-          forge.asn1.Type.SET,
+      p7.signerInfos[0].value[6].value[0].value[1] = _nodeForge.default.asn1.create(
+          _nodeForge.default.asn1.Class.UNIVERSAL,
+          _nodeForge.default.asn1.Type.SET,
           true,
           [timestampToken]
       );
