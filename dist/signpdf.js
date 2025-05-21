@@ -146,42 +146,39 @@ class SignPdf {
     // https://ec.europa.eu/digital-building-blocks/DSS/webapp-demo/validation
 
 
-    p7.addSigner({
+    let signer = {
       key: privateKey,
-      certificate: signerCert,
-      issuer: signerCert.issuer,
-      serialNumber: signerCert.serialNumber,
+      certificate,
       digestAlgorithm: _nodeForge.default.pki.oids.sha256,
       authenticatedAttributes: [
-        // ORDER MATTERS!
-        {
-          type: _nodeForge.default.pki.oids.contentType,
-          value: _nodeForge.default.pki.oids.data,
-        },
-        {
-          type: _nodeForge.default.pki.oids.messageDigest,
-          // value will be auto-populated at signing time
-        },
-        {
-          type: _nodeForge.default.pki.oids.essSigningCertificateV2,
-          value: essSigningCertAsn1,
-        },
-        {
-          type: _nodeForge.default.pki.oids.revocationInfoArchival,
-          value: revocationInfoArchivalAsn1,
-        },
-      ],
-    });
-
-    if (options.tsa) {
-      signer.unauthenticatedAttributes = [
           {
-              type: _nodeForge.default.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
-              value: ""
-          }
+              type: _nodeForge.default.pki.oids.contentType,
+              value: _nodeForge.default.pki.oids.data,
+          }, {
+              type: _nodeForge.default.pki.oids.messageDigest,
+              // value will be auto-populated at signing time
+          }, {
+              type: _nodeForge.default.pki.oids.signingTime,
+              // value can also be auto-populated at signing time
+              // We may also support passing this as an option to sign().
+              // Would be useful to match the creation time of the document for example.
+              value: new Date(),
+          },
+      ],
+  }
+  if (options.tsa) {
+    signer = {
+      ...signer,
+      unauthenticatedAttributes: [
+        {
+            type: _nodeForge.default.pki.oids.timeStampToken, // "1.2.840.113549.1.9.16.2.14"
+            value: ""
+        }
       ]
+    }
   }
 
+    p7.addSigner(signer)
     p7.sign({
       detached: true
     }); // Check if the PDF has a good enough placeholder to fit the signature.
@@ -286,18 +283,19 @@ class SignPdf {
     } // end TSA helper function
 
     if (options.tsa) {
-      const signature = p7.signers[0].signature;
       const token = await tsa({
           tsaUrl: options.tsa,
-          signature
+          signature: options.signature
       });
 
-      p7.signerInfos[0].value[6].value[0].value[1] = _nodeForge.default.asn1.create(
-          _nodeForge.default.asn1.Class.UNIVERSAL,
-          _nodeForge.default.asn1.Type.SET,
-          true,
-          [timestampToken]
-      );
+      const created = _nodeForge.default.asn1.create(
+        _nodeForge.default.asn1.Class.UNIVERSAL,
+        _nodeForge.default.asn1.Type.SET,
+        true,
+        [token]
+    );
+
+      p7.signerInfos[0].value[6].value[0].value[1] = created
   }
 
     const raw = _nodeForge.default.asn1.toDer(p7.toAsn1()).getBytes(); // placeholderLength represents the length of the HEXified symbols but we're
